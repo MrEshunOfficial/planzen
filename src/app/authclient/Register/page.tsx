@@ -27,8 +27,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z
   .object({
@@ -89,7 +89,7 @@ export default function Register() {
       setIsGeneratingPassword(false);
     }
   };
-  
+
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
@@ -138,7 +138,7 @@ export default function Register() {
             <div className="space-y-6">
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold">
-                  Welcome to Planzen
+                  Welcome to Harvest Bridge
                 </h1>
                 <p className="text-base md:text-lg mt-2 md:mt-4 opacity-90">
                   Join thousands of professionals who trust our enterprise
