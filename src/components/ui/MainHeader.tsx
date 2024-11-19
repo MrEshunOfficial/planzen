@@ -1,234 +1,130 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { UserIcon, Sun, Moon, Laptop, BellIcon } from "lucide-react";
 import {
-  Bell,
-  Menu,
-  Moon,
-  Search,
-  Sun,
-  User,
-  X,
-  LucideIcon,
-  Settings,
-  LogOut,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 import Link from "next/link";
+import { useTheme } from "next-themes";
+import { useSession } from "next-auth/react";
+import Logout from "./Logout";
+import { Button } from "./button";
 
-interface IconButtonProps {
-  icon: LucideIcon;
-  onClick?: () => void;
-  label?: string;
-}
+export default function MainHeader() {
+  const { setTheme } = useTheme();
+  const { data: session } = useSession();
 
-interface MobileMenuItemProps {
-  icon: LucideIcon;
-  label: string;
-  onClick?: () => void;
-  href?: string;
-}
+  const ThemeToggleButton = () => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="secondary" className="relative w-10 h-10 rounded-full">
+          <Sun className="rotate-0 scale-100 transition-transform duration-200 dark:-rotate-90 dark:scale-0 " />
+          <Moon className="absolute rotate-90 scale-0 transition-transform duration-200 dark:rotate-0 dark:scale-100 " />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="center" className="w-36">
+        <Button
+          onClick={() => setTheme("light")}
+          className="flex w-full items-center justify-start gap-3 rounded-md p-2"
+          variant="ghost"
+        >
+          <Sun className="h-5 w-5" />
+          <span>Light</span>
+        </Button>
+        <Button
+          onClick={() => setTheme("dark")}
+          className="flex w-full items-center justify-start gap-3 rounded-md p-2 my-1"
+          variant="ghost"
+        >
+          <Moon className="h-5 w-5" />
+          <span>Dark</span>
+        </Button>
+        <Button
+          onClick={() => setTheme("system")}
+          className="flex w-full items-center justify-start gap-3 rounded-md p-2"
+          variant="ghost"
+        >
+          <Laptop className="h-5 w-5" />
+          <span>System</span>
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
 
-const IconButton: React.FC<IconButtonProps> = ({
-  icon: Icon,
-  onClick,
-  label,
-}) => (
-  <button
-    onClick={onClick}
-    className="p-2 hover:bg-green-100 dark:hover:bg-green-900 rounded-full transition-colors"
-    aria-label={label}
-    type="button"
-  >
-    <Icon className="h-5 w-5 text-green-700 dark:text-green-400" />
-  </button>
-);
+  return (
+    <div className="w-full flex items-center justify-between">
+      <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">
+        PlanZen
+      </h3>
 
-const MobileMenuItem: React.FC<MobileMenuItemProps> = ({
-  icon: Icon,
-  label,
-  onClick,
-  href,
-}) => {
-  const content = (
-    <div className="flex items-center gap-3 py-3 px-4 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors rounded-lg">
-      <Icon className="h-5 w-5 text-green-700 dark:text-green-400" />
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-        {label}
-      </span>
+      <div className="flex items-center justify-end gap-3">
+        <Popover>
+          <PopoverTrigger asChild>
+            <div className="inline-flex items-center justify-center rounded-full w-10 h-10 hover:bg-secondary cursor-pointer">
+              <BellIcon size={20} />
+            </div>
+          </PopoverTrigger>
+          <PopoverContent className="min-w-60 rounded-2xl p-1 mr-1 mt-3">
+            <ul className="my-6 ml-6 list-disc [&>li]:mt-2">
+              <li>1st level of puns: 5 gold coins</li>
+              <li>2nd level of jokes: 10 gold coins</li>
+              <li>3rd level of one-liners : 20 gold coins</li>
+            </ul>
+          </PopoverContent>
+        </Popover>
+        <ThemeToggleButton />
+        <Popover>
+          <PopoverTrigger asChild>
+            <div className="flex items-center justify-start p-1 px-2 gap-3 hover:bg-secondary hover:rounded-lg transition-colors cursor-pointer">
+              <Avatar className="h-10 w-10 border border-border rounded-full shadow-md">
+                <AvatarImage
+                  src={session?.user?.image || undefined}
+                  alt={session?.user?.name || "User"}
+                />
+                <AvatarFallback>
+                  <UserIcon size={18} />
+                </AvatarFallback>
+              </Avatar>
+              <p className="flex flex-col items-start text-sm">
+                <span>{session?.user?.name || "Not Signed In"}</span>
+                <span>{session?.user?.email || ""}</span>
+              </p>
+            </div>
+          </PopoverTrigger>
+          <PopoverContent className="min-w-72 rounded-2xl p-1 mr-1 -mt-16">
+            <div className="flex flex-col text-sm gap-3">
+              <div className="p-2 flex flex-col items-center gap-3 pb-3 border-b-2">
+                <Avatar className="h-16 w-16 border border-border rounded-full shadow-md">
+                  <AvatarImage
+                    src={session?.user?.image || undefined}
+                    alt={session?.user?.name || "User"}
+                  />
+                  <AvatarFallback>
+                    <UserIcon size={18} />
+                  </AvatarFallback>
+                </Avatar>
+                <p className="flex items-center flex-col leading-7 [&:not(:first-child)]:mt-0 text-sm p-2">
+                  <span>{session?.user?.name || "Not Signed In"}</span>
+                  <span>{session?.user?.email || ""}</span>
+                </p>
+              </div>
+              <div className="pb-2 p-1 flex items-center gap-3">
+                {!session ? (
+                  <Button>
+                    <Link href={"/authclient/Login"}>SignUp</Link>
+                  </Button>
+                ) : (
+                  <Logout />
+                )}
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
     </div>
   );
-
-  if (href) {
-    return <Link href={href}>{content}</Link>;
-  }
-
-  return (
-    <button onClick={onClick} className="w-full text-left">
-      {content}
-    </button>
-  );
-};
-
-const MainHeader: React.FC = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
-
-  // Close mobile menu when screen size changes to desktop
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsMobileMenuOpen(false);
-        setIsSearchOpen(false);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const toggleTheme = (): void => {
-    setIsDarkMode(!isDarkMode);
-  };
-
-  const toggleMobileMenu = (): void => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-    if (isSearchOpen) setIsSearchOpen(false);
-  };
-
-  const toggleSearch = (): void => {
-    setIsSearchOpen(!isSearchOpen);
-    if (isMobileMenuOpen) setIsMobileMenuOpen(false);
-  };
-
-  return (
-    <header className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Top Bar */}
-        <div className="h-16 flex items-center justify-between gap-4">
-          {/* Logo */}
-          <Link
-            href={"/"}
-            className="font-bold text-2xl text-green-800 dark:text-green-300 flex-shrink-0"
-          >
-            PlanZen
-          </Link>
-
-          {/* Desktop Search */}
-          <div className="hidden md:flex flex-1 max-w-md mx-4">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="search"
-                placeholder="Search..."
-                className="w-full pl-10" // Adjust padding to account for the icon
-              />
-            </div>
-          </div>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-4">
-            <IconButton
-              icon={Bell}
-              label="Notifications"
-              onClick={() => console.log("Notifications clicked")}
-            />
-            <IconButton
-              icon={isDarkMode ? Sun : Moon}
-              label="Toggle theme"
-              onClick={toggleTheme}
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div>
-                  <IconButton icon={User} label="User menu" />
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={() => console.log("Profile clicked")}
-                >
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => console.log("Settings clicked")}
-                >
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link href={"/authclient/Login"}>Sign Out</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </nav>
-
-          {/* Mobile Controls */}
-          <div className="flex md:hidden items-center gap-2">
-            <IconButton
-              icon={Search}
-              onClick={toggleSearch}
-              label="Toggle search"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleMobileMenu}
-              aria-label="Toggle mobile menu"
-            >
-              {isMobileMenuOpen ? <X /> : <Menu />}
-            </Button>
-          </div>
-        </div>
-
-        {/* Mobile Search Bar */}
-        {isSearchOpen && (
-          <div className="md:hidden py-3 border-t border-gray-200 dark:border-gray-800">
-            <Input type="search" placeholder="Search..." className="w-full" />
-          </div>
-        )}
-
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 dark:border-gray-800">
-            <nav className="py-4 space-y-1">
-              <MobileMenuItem
-                icon={Bell}
-                label="Notifications"
-                onClick={() => console.log("Notifications clicked")}
-              />
-              <MobileMenuItem
-                icon={User}
-                label="Profile"
-                onClick={() => console.log("Profile clicked")}
-              />
-              <MobileMenuItem
-                icon={Settings}
-                label="Settings"
-                onClick={() => console.log("Settings clicked")}
-              />
-              <MobileMenuItem
-                icon={isDarkMode ? Sun : Moon}
-                label="Toggle theme"
-                onClick={toggleTheme}
-              />
-              <MobileMenuItem
-                icon={LogOut}
-                label="Sign Out"
-                href="/authclient/Login"
-              />
-            </nav>
-          </div>
-        )}
-      </div>
-    </header>
-  );
-};
-
-export default MainHeader;
+}

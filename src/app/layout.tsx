@@ -42,14 +42,14 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <main className="container min-h-screen flex flex-col p-1">
+              <main className="w-full min-h-screen flex flex-col p-1">
                 {/* Fixed header on mobile, static on desktop */}
-                <header className="fixed sm:static top-0 left-0 right-0 z-50 border sm:px-4 lg:px-4 py-2 w-full p-2 sm:p-4 flex flex-col gap-6 bg-background rounded-lg">
+                <header className="border sm:px-4 lg:px-4 py-2 w-full p-2 sm:p-4 flex flex-col gap-6 bg-background rounded-lg">
                   <MainHeader />
                 </header>
 
                 {/* Main content with padding-top on mobile to account for fixed header */}
-                <section className="flex-1 w-full mt-[88px] sm:mt-2 h-[calc(80vh-theme(spacing.24))] sm:h-[calc(80vh-theme(spacing.28))] overflow-auto flex items-center justify-center">
+                <section className="flex-1 w-full sm:mt-2 h-[calc(80vh-theme(spacing.24))] sm:h-[calc(100vh-theme(spacing.28))] overflow-auto flex items-center justify-center">
                   {children}
                 </section>
               </main>
