@@ -195,7 +195,7 @@ const CalendarToolBar = ({
           onClick={() => calendarRef.current?.getApi()?.prev()}
           variant="ghost"
           size="icon"
-          className="hover:bg-white dark:hover:bg-gray-600 rounded-md h-8 w-8 flex items-center justify-center"
+          className="hover:bg-white dark:hover:bg-gray-600 rounded-md"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -203,7 +203,7 @@ const CalendarToolBar = ({
           onClick={() => calendarRef.current?.getApi()?.next()}
           variant="ghost"
           size="icon"
-          className="hover:bg-white dark:hover:bg-gray-600 rounded-md h-8 w-8 flex items-center justify-center"
+          className="hover:bg-white dark:hover:bg-gray-600 rounded-md"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -211,8 +211,7 @@ const CalendarToolBar = ({
       <Button
         onClick={() => calendarRef.current?.getApi()?.today()}
         variant="outline"
-        size="sm"
-        className="text-xs font-medium hidden sm:block"
+        className="text-sm font-medium hidden sm:block"
       >
         Today
       </Button>
@@ -312,35 +311,7 @@ const CalendarToolBar = ({
       {/* Mobile View */}
       <div className="sm:hidden">
         <div className="flex items-center justify-between mb-4">
-          {/* Modified mobile navigation section */}
-          <div className="flex items-center space-x-2">
-            <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
-              <Button
-                onClick={() => calendarRef.current?.getApi()?.prev()}
-                variant="ghost"
-                size="icon"
-                className="hover:bg-white dark:hover:bg-gray-600 rounded-md h-8 w-8 flex items-center justify-center"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                onClick={() => calendarRef.current?.getApi()?.next()}
-                variant="ghost"
-                size="icon"
-                className="hover:bg-white dark:hover:bg-gray-600 rounded-md h-8 w-8 flex items-center justify-center"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-            <Button
-              onClick={() => calendarRef.current?.getApi()?.today()}
-              variant="outline"
-              size="sm"
-              className="text-xs font-medium"
-            >
-              Today
-            </Button>
-          </div>
+          <NavigationControls />
           <div className="flex items-center space-x-2">
             <SearchBar />
             <Button
@@ -374,33 +345,6 @@ const CalendarToolBar = ({
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full flex items-center space-x-2"
-                >
-                  {getCurrentViewOption().icon}
-                  <span className="ml-2">{getCurrentViewOption().label}</span>
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="center"
-                className="w-full flex  flex-col gap-2 items-start"
-              >
-                {viewOptions.map(({ view, icon, label }) => (
-                  <DropdownMenuItem
-                    key={view}
-                    className="flex items-center space-x-2"
-                    onClick={() => handleViewChange(view)}
-                  >
-                    {icon}
-                    <span>{label}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
             <div className="flex items-center space-x-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -445,7 +389,6 @@ const CalendarToolBar = ({
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon">

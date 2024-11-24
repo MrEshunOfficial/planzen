@@ -1,172 +1,89 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
-import {
-  Menu,
-  Calendar as CalendarIcon,
-  Users,
-  Settings,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import ResponsiveCalendarPage from "./calendar-features/MainCalendarPage";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import CalendarPage from "./calendar-features/CalendarPage";
+import TaskListPage from "./calendar-features/TaskListPage";
+import CalendarToolBar from "./calendar-features/CalendarToolBar";
+import { ViewMode, CalendarView } from "@/store/event.types";
 
-// Navigation Item Type
-interface NavItem {
-  icon: React.ReactNode;
-  label: string;
-}
+export default function HomePage() {
+  // State management
+  const [isNavOpen, setIsNavOpen] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>("calendar");
+  const [selectedView, setSelectedView] =
+    useState<CalendarView>("timeGridWeek");
+  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
 
-export default function CalendarPageWithNavigation() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeNavItem, setActiveNavItem] = useState("Calendar");
-  const [isMobile, setIsMobile] = useState(false);
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  // Calendar reference
+  const calendarRef = useRef(null);
 
-  // Define navigation items
-  const navItems: NavItem[] = [
-    { icon: <CalendarIcon className="h-5 w-5" />, label: "Calendar" },
-    { icon: <Users className="h-5 w-5" />, label: "Todos" },
-    { icon: <Bell className="h-5 w-5" />, label: "Appointments" },
-    { icon: <Settings className="h-5 w-5" />, label: "Special Events" },
-  ];
+  // Screen type detection
+  const getScreenType = () => {
+    if (typeof window !== "undefined") {
+      const width = window.innerWidth;
+      if (width < 768) return "mobile";
+      if (width < 1024) return "tablet";
+      return "desktop";
+    }
+    return "desktop";
+  };
 
-  // Check screen size and set mobile view
-  useEffect(() => {
-    const checkMobileView = () => {
-      setIsMobile(window.innerWidth < 640);
-      if (window.innerWidth < 640) {
-        setIsSidebarOpen(false);
-      }
-    };
-
-    // Check initial screen size
-    checkMobileView();
-
-    // Add event listener for window resize
-    window.addEventListener("resize", checkMobileView);
-
-    // Cleanup event listener
-    return () => window.removeEventListener("resize", checkMobileView);
-  }, []);
-
-  // Mobile Sidebar Drawer
-  const MobileSidebarDrawer = () => (
-    <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-      <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="fixed bottom-4 right-4 z-50 sm:hidden"
-          onClick={() => setIsSidebarOpen(true)}
-          aria-label="Open Sidebar"
-        >
-          <CalendarIcon />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-[320px] p-1">
-        <nav className="space-y-2 p-2 mt-8">
-          {navItems.map((item) => (
-            <Button
-              key={item.label}
-              variant={activeNavItem === item.label ? "default" : "ghost"}
-              className="w-full justify-start px-4"
-              onClick={() => {
-                setActiveNavItem(item.label);
-                setIsSidebarOpen(false);
-              }}
-            >
-              {item.icon}
-              <span className="ml-2">{item.label}</span>
-            </Button>
-          ))}
-        </nav>
-        <div className="mt-4 p-2">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={setDate}
-            className="rounded-md border w-full"
-          />
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
+  // Handle event creation
+  const handleCreateEvent = () => {
+    setIsEventDialogOpen(true);
+  };
 
   return (
-    <main className="flex h-[88vh] w-full mt-4 relative">
-      {/* Mobile Sidebar Trigger (only on mobile) */}
-      {isMobile && <MobileSidebarDrawer />}
+    <div className="h-auto w-full flex items-center justify-center mt-2">
+      <main className="w-full min-h-[90vh] p-2 flex flex-col md:flex-row items-stretch gap-2">
+        {/* Mobile Navigation Toggle Button */}
+        <Button
+          onClick={() => setIsNavOpen(!isNavOpen)}
+          className="md:hidden w-full mb-2"
+        >
+          {isNavOpen ? "Hide Calendar Sidebar" : "Show Calendar Sidebar"}
+        </Button>
 
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "bg-background border-r transition-all duration-300 ease-in-out overflow-hidden flex flex-col ",
-          isMobile ? "hidden" : isSidebarOpen ? "w-80" : "w-20",
-          "sm:block"
-        )}
-      >
-        {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          {isSidebarOpen && (
-            <h2 className="text-lg font-semibold">Dashboard</h2>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            aria-label="Toggle Sidebar"
-            className="ml-auto"
-          >
-            {isSidebarOpen ? <ChevronLeft /> : <ChevronRight />}
-          </Button>
-        </div>
+        {/* Sidebar */}
+        <aside
+          className={`
+            transition-all duration-300 ease-in-out
+            ${isNavOpen ? "h-64 md:h-full" : "h-0 md:h-full"}
+            ${isNavOpen ? "opacity-100" : "opacity-0 md:opacity-100"}
+            ${isNavOpen ? "mb-2 md:mb-0" : "mb-0"}
+            overflow-hidden
+            md:block md:w-80 lg:w-96
+            border rounded-lg p-2
+          `}
+        >
+          calendar aside
+        </aside>
 
-        {/* Navigation Items */}
-        <nav className="mt-4 space-y-2 p-2">
-          {navItems.map((item) => (
-            <Button
-              key={item.label}
-              variant={activeNavItem === item.label ? "default" : "ghost"}
-              className="w-full justify-start px-4"
-              onClick={() => setActiveNavItem(item.label)}
-            >
-              {item.icon}
-              {isSidebarOpen && <span className="ml-2">{item.label}</span>}
-            </Button>
-          ))}
-        </nav>
-
-        {/* Mini Calendar */}
-        {isSidebarOpen && (
-          <div className="mt-6 px-4">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border"
+        {/* Main Content */}
+        <section className="flex-1 min-h-0 flex flex-col gap-2 border rounded-lg p-2">
+          <header className="w-full p-1 rounded-lg">
+            <CalendarToolBar
+              calendarRef={calendarRef}
+              selectedView={selectedView}
+              screenType={getScreenType()}
+              isEventDialogOpen={isEventDialogOpen}
+              viewMode={viewMode}
+              setSelectedView={setSelectedView}
+              setIsEventDialogOpen={setIsEventDialogOpen}
+              setViewMode={setViewMode}
+              handleCreateEvent={handleCreateEvent}
             />
-          </div>
-        )}
-      </aside>
-
-      {/* Main Content */}
-      <section
-        className={cn(
-          "flex-1 flex items-center justify-center overflow-auto transition-all duration-300 ease-in-out px-4",
-          isMobile
-            ? "w-full"
-            : isSidebarOpen
-            ? "w-[calc(100%-320px)]"
-            : "w-[calc(100%-80px)]"
-        )}
-      >
-        <ResponsiveCalendarPage />
-      </section>
-    </main>
+          </header>
+          <section className="w-full flex-1 min-h-0 p-1 border rounded-lg overflow-auto">
+            {viewMode === "calendar" ? (
+              <CalendarPage calendarRef={calendarRef} />
+            ) : (
+              <TaskListPage />
+            )}
+          </section>
+        </section>
+      </main>
+    </div>
   );
 }

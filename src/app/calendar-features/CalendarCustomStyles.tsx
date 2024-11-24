@@ -1,176 +1,199 @@
 import { createGlobalStyle } from "styled-components";
 
 export const CalendarCustomStyles = createGlobalStyle`
-  /* General calendar styles */
   .fc {
-    --fc-border-color: #e5e7eb;
-    --fc-day-today-bg-color: #f3f4f6;
-    --fc-event-bg-color: #3b82f6;
-    --fc-event-border-color: #2563eb;
-    
+    /* Color Palette */
+    --fc-primary-color: #3b82f6;
+    --fc-primary-color-light: #60a5fa;
+    --fc-neutral-100: #f9fafb;
+    --fc-neutral-200: #e5e7eb;
+    --fc-neutral-500: #6b7280;
+    --fc-neutral-600: #4b5563;
+    --fc-neutral-700: #374151;
+    --fc-neutral-800: #1f2937;
+    --fc-neutral-900: #111827;
+
+    /* Border & Background Defaults */
+    --fc-border-color: var(--fc-neutral-200);
+    --fc-day-today-bg-color: var(--fc-neutral-100);
+    --fc-event-bg-color: var(--fc-primary-color);
+    --fc-event-border-color: var(--fc-primary-color);
+
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+    /* Global Resets */
     .fc-scrollgrid {
-      border: none !important;
+      border: 1px solid var(--fc-border-color) !important;
+      border-radius: 8px;
+      overflow: hidden;
     }
   }
 
-  /* Monthly view specific styles */
+  /* Monthly View Enhancements */
   .fc-dayGridMonth-view {
     .fc-scrollgrid-sync-inner {
-      padding: 8px 4px !important;
-      min-height: 140px !important;
+      padding: 4px !important;
+      min-height: 120px !important;
     }
 
     .fc-daygrid-day-frame {
-      padding: 8px !important;
-      min-height: 140px !important;
+      padding: 6px !important;
+      transition: background-color 0.2s ease;
     }
 
     .fc-daygrid-day-top {
       justify-content: center;
-      margin-bottom: 4px;
-      
+
       .fc-daygrid-day-number {
-        font-size: 1rem;
+        font-size: 0.875rem;
         font-weight: 500;
-        color: #4b5563;
+        color: var(--fc-neutral-600);
         padding: 4px 8px;
         border-radius: 9999px;
+        transition: all 0.2s ease;
 
         &:hover {
-          background-color: #f3f4f6;
+          background-color: var(--fc-primary-color-light);
+          color: white;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
         }
       }
     }
 
-    /* Style for the current date */
+    /* Today Highlight */
     .fc-day-today {
+      background-color: color-mix(in srgb, var(--fc-primary-color) 10%, transparent) !important;
+
       .fc-daygrid-day-number {
-        background-color: #3b82f6;
+        background-color: var(--fc-primary-color);
         color: white;
+        font-weight: 600;
       }
     }
 
-    /* Weekend days */
+    /* Weekend Styling */
     .fc-day-sat, .fc-day-sun {
-      background-color: #f9fafb;
+      background-color: color-mix(in srgb, var(--fc-neutral-100) 50%, transparent);
     }
 
-    /* Events in month view */
+    /* Event Styling */
     .fc-daygrid-event-harness {
       margin: 2px 0 !important;
     }
 
     .fc-daygrid-event {
-      border-radius: 4px;
+      border-radius: 6px;
       padding: 2px 4px !important;
-      font-size: 0.875rem;
+      font-size: 0.75rem;
       border: none;
-      background: #3b82f6;
+      background: var(--fc-primary-color);
       color: white;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--fc-primary-color-light);
+        transform: scale(1.03);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
 
       .fc-event-main {
         padding: 0 !important;
-      }
-
-      .fc-event-time {
-        font-size: 0.75rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     }
 
-    /* More events link */
+    /* More Events Link */
     .fc-daygrid-more-link {
-      font-size: 0.875rem;
-      color: #3b82f6;
-      font-weight: 500;
+      font-size: 0.75rem;
+      color: var(--fc-primary-color);
+      font-weight: 600;
       padding: 2px 4px;
-      margin: 0 4px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
 
       &:hover {
-        background-color: #f3f4f6;
-        border-radius: 4px;
+        background-color: var(--fc-primary-color-light);
+        color: white;
       }
     }
   }
 
-  /* Week/Day view styles (keeping these from before) */
+  /* Time Grid View */
   .fc-timegrid {
-    .fc-scrollgrid-sync-inner {
-      padding: 8px;
-      min-height: 6rem;
-    }
-
     .fc-timegrid-slot {
       height: 3rem !important;
-      border-bottom: 1px solid #f3f4f6 !important;
+      border-bottom: 1px solid var(--fc-neutral-200) !important;
+
+      &.fc-timegrid-slot-lane {
+        opacity: 0.6;
+      }
     }
 
     .fc-timegrid-now-indicator-line {
       border-color: #ef4444;
-    }
-
-    .fc-timegrid-axis {
-      padding: 12px !important;
-      border: none !important;
+      border-width: 2px;
     }
 
     .fc-timegrid-event {
-      border-radius: 6px;
+      border-radius: 8px;
       margin: 2px 4px !important;
-      
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+
       .fc-event-main {
         padding: 4px 6px !important;
       }
     }
   }
 
-  /* Header styles */
+  /* Header Styling */
   .fc-col-header-cell {
-    padding: 12px 0 !important;
-    background-color: #f9fafb;
+    background-color: var(--fc-neutral-100);
     border: none !important;
-    
+
     .fc-scrollgrid-sync-inner {
-      padding: 16px 8px;
-      min-height: 48px;
+      padding: 12px 8px;
       text-align: center;
       font-weight: 600;
-      color: #4b5563;
+      color: var(--fc-neutral-600);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
   }
 
-  /* Dark mode support */
+  /* Dark Mode */
   .dark {
     .fc {
-      --fc-border-color: #374151;
-      --fc-day-today-bg-color: #1f2937;
-      
+      --fc-border-color: var(--fc-neutral-700);
+      --fc-day-today-bg-color: var(--fc-neutral-800);
+
       .fc-col-header-cell {
-        background-color: #111827;
-        color: #e5e7eb;
+        background-color: var(--fc-neutral-900);
+        color: var(--fc-neutral-200);
       }
 
       .fc-dayGridMonth-view {
         .fc-daygrid-day-number {
-          color: #e5e7eb;
-        }
-
-        .fc-day-sat, .fc-day-sun {
-          background-color: #111827;
-        }
-
-        .fc-daygrid-more-link {
-          color: #60a5fa;
+          color: var(--fc-neutral-200);
         }
 
         .fc-day-today {
+          background-color: color-mix(in srgb, var(--fc-primary-color) 20%, transparent) !important;
+
           .fc-daygrid-day-number {
-            background-color: #2563eb;
+            background-color: var(--fc-primary-color-light);
           }
         }
+
+        .fc-day-sat, .fc-day-sun {
+          background-color: color-mix(in srgb, var(--fc-neutral-800) 50%, transparent);
+        }
       }
-      
+
       .fc-timegrid-slot {
-        border-bottom: 1px solid #1f2937 !important;
+        border-bottom: 1px solid var(--fc-neutral-700) !important;
       }
     }
   }
