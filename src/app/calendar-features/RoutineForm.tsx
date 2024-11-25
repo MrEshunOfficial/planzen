@@ -20,7 +20,7 @@ interface RoutineFormProps {
   initialData?: Partial<RoutineFormData>;
 }
 
-const RoutineForm: React.FC<RoutineFormProps> = ({
+export const RoutineForm: React.FC<RoutineFormProps> = ({
   onSubmit,
   initialData = {
     routineNotes: "",
@@ -133,5 +133,3 @@ const RoutineForm: React.FC<RoutineFormProps> = ({
     </div>
   );
 };
-
-export default RoutineForm;

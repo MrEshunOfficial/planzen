@@ -101,7 +101,8 @@ export default function CalendarPage({
           footerToolbar={false}
           selectable={true}
           selectMirror={true}
-          dayMaxEvents={3}
+          dayMaxEvents={true}
+          moreLinkClick="day"
           weekends={true}
           events={filteredEvents}
           eventContent={renderEventContent}

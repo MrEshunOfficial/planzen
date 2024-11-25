@@ -1,14 +1,10 @@
 "use client";
 import { CardContent } from "@/components/ui/card";
 import { TabsContent, TabsList } from "@/components/ui/tabs";
-import TodoForm from "./TodoForm";
-
 import { Tabs, TabsTrigger } from "@radix-ui/react-tabs";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DateTimeComponent, EventRepeatSelection } from "./DatesAndReminders";
-import RoutineForm from "./RoutineForm";
-import { SpecialEventData, SpecialEventsForm } from "./SpecialEventsForm";
 import { AppointmentData, AppointmentForm } from "./AppointmentForm";
 import { ReminderComponent } from "./EventReminder";
 import { useDispatch } from "react-redux";
@@ -26,6 +22,9 @@ import {
 } from "@/store/event.types";
 import { AppDispatch } from "@/store";
 import { createEvent, IEvent } from "@/store/event.slice";
+import { SpecialEventData, SpecialEventsForm } from "./SpecialEventsForm";
+import { TodoForm } from "./TodoForm";
+import { RoutineForm } from "./RoutineForm";
 
 export default function EventForm() {
   const [activeTab, setActiveTab] = useState<

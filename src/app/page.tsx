@@ -89,7 +89,7 @@ export default function HomePage() {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-80">
+            <SheetContent side="left" className="w-80 p-0">
               <AsideContent />
             </SheetContent>
           </Sheet>

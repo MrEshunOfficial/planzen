@@ -1,82 +1,111 @@
 import type { NextAuthConfig } from 'next-auth';
+import { User as DbUser } from "@/models/authentication/authModel";
 
-// Define public and private paths
-const publicPaths = ['/', '/authclient/Register', '/authclient/Login'];
-const privatePaths = ['/profile'];
+export type AuthUser = {
+  id: string;
+  role: string;
+  email: string | null;
+  name: string | null;
+  provider: string | null;
+  providerId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  comparePassword?: (password: string) => Promise<boolean>;
+};
 
-// Extend the Session and JWT types to include sessionId
 declare module 'next-auth' {
   interface Session {
-    sessionId?: string;
+    user: {
+      id: string;
+      role: string;
+      email: string | null;
+      name: string | null;
+      provider: string | null;
+      providerId: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    }
+    sessionId: string;
   }
+
+  interface User extends AuthUser {}
+
   interface JWT {
-    sessionId?: string;
+    id: string;
+    role: string;
+    provider?: string;
+    sessionId: string;
   }
 }
 
-// Helper function to generate random string using Web Crypto API
-async function generateSessionId(): Promise<string> {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-}
+// Define public and private paths
+const publicPaths = [
+  '/authclient/Register',
+  '/authclient/Login',
+  '/authclient/error',
+  '/api/auth/callback/google',
+  '/api/auth/callback/credentials'
+] as const;
 
-// Define authConfig with satisfies NextAuthConfig
-export const authConfig = {
+const privatePaths = ['/profile', '/'] as const;
+
+// Convert array to Set for better performance
+const PUBLIC_PATHS = new Set<string>(publicPaths);
+const PRIVATE_PATHS = new Set<string>(privatePaths);
+
+// Helper function to check if path starts with any private path
+const isPrivatePath = (path: string) => {
+  return Array.from(PRIVATE_PATHS).some(privatePath => 
+    path.startsWith(privatePath)
+  );
+};
+
+export const authConfig: NextAuthConfig = {
   pages: {
     signIn: '/authclient/Login',
+    signOut: '/authclient/Login',
+    error: '/authclient/error',
   },
   callbacks: {
-    async authorized({ auth, request: { nextUrl } }) {
-      const isUserSession = !!auth?.user;
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
       const path = nextUrl.pathname;
 
-      // Check if the path is public
-      const isPublicPath = publicPaths.some(publicPath => path.startsWith(publicPath));
-
-      // Check if the path is private
-      const isPrivatePath = privatePaths.some(privatePath => path.startsWith(privatePath));
-
-      // Handle public paths - always accessible
-      if (isPublicPath) {
+      // Handle callback URLs for OAuth providers
+      if (path.startsWith('/api/auth/callback/')) {
         return true;
       }
 
-      // Handle private paths - require authentication
-      if (isPrivatePath) {
-        return isUserSession;
+      // Handle public paths
+      if (PUBLIC_PATHS.has(path)) {
+        // Redirect to profile if already logged in
+        if (isLoggedIn) {
+          return Response.redirect(new URL('/profile', nextUrl));
+        }
+        return true;
       }
 
-      // Handle home page
-      const isOnHomePage = path === '/';
-      if (isOnHomePage) {
-        if (isUserSession) return true;
-        return false; // Redirect unauthenticated users to login page
+      // Handle private paths
+      if (isPrivatePath(path)) {
+        if (!isLoggedIn) {
+          const callbackUrl = encodeURIComponent(path);
+          return Response.redirect(
+            new URL(`/authclient/Login?callbackUrl=${callbackUrl}`, nextUrl)
+          );
+        }
+        return true;
       }
 
-      // Handle authenticated users trying to access auth pages
-      const isAuthPage = path.startsWith('/authclient');
-      if (isAuthPage && isUserSession) {
-        return Response.redirect(new URL('/', nextUrl));
+      // Handle root path
+      if (path === '/') {
+        return isLoggedIn
+          ? Response.redirect(new URL('/profile', nextUrl))
+          : Response.redirect(new URL('/authclient/Login', nextUrl));
       }
 
-      // Default to allowing access
+      // Allow access to all other paths
       return true;
     },
-    async jwt({ token, user }) {
-      // Generate sessionId if the user exists
-      if (user) {
-        token.sessionId = await generateSessionId();
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      // Attach sessionId from token to the session
-      if (token.sessionId && typeof token.sessionId === 'string') {
-        session.sessionId = token.sessionId;
-      }
-      return session;
-    },
   },
-  providers: [], // Add providers with an empty array for now
-} satisfies NextAuthConfig;
+  providers: [], // Providers will be configured in auth.ts
+};

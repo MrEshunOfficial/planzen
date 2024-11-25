@@ -20,7 +20,7 @@ interface TodoFormProps {
   onUpdate: (updatedData: TodoFormProps["data"]) => void;
 }
 
-const TodoForm: React.FC<TodoFormProps> = ({ data, onUpdate }) => {
+export const TodoForm: React.FC<TodoFormProps> = ({ data, onUpdate }) => {
   const handleDescriptionChange = (description: string) => {
     onUpdate({ description });
   };
@@ -176,5 +176,3 @@ const TodoForm: React.FC<TodoFormProps> = ({ data, onUpdate }) => {
     </div>
   );
 };
-
-export default TodoForm;

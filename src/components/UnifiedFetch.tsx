@@ -15,8 +15,6 @@ import {
   selectEvents,
   selectEventsStatus,
 } from "@/store/event.slice";
-import { Button } from "./ui/button";
-import Link from "next/link";
 
 interface UnifiedFetchProps {
   children: React.ReactNode;
@@ -30,7 +28,7 @@ interface FetchOperation {
 
 const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { data: session, status: sessionStatus } = useSession();
+  const { data: session } = useSession();
   const userId = session?.user?.id;
 
   const {
@@ -49,19 +47,6 @@ const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
     { name: "Profile", status: "pending", progress: 0 },
     { name: "Events", status: "pending", progress: 0 },
   ]);
-
-  const totalProgress = Math.floor(
-    operations.reduce((acc, op) => acc + op.progress, 0) / operations.length
-  );
-
-  const getLoadingMessage = () => {
-    if (totalProgress === 100) return "Setup complete";
-    return (
-      <p>
-        Loading data, please wait <span className="animate-bounce">...</span>{" "}
-      </p>
-    );
-  };
 
   const updateOperationProgress = useCallback(
     (
@@ -100,7 +85,6 @@ const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
     [updateOperationProgress]
   );
 
-  // Check if all operations are complete
   useEffect(() => {
     if (operations.every((op) => op.status === "completed")) {
       setAllOperationsComplete(true);
@@ -158,12 +142,9 @@ const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
       }
     };
 
-    if (userId && !hasAttemptedFetch) {
+    // Only fetch if we haven't attempted yet and have a userId
+    if (!hasAttemptedFetch && userId) {
       fetchData();
-    }
-
-    if (!userId && sessionStatus !== "loading") {
-      setHasAttemptedFetch(true);
     }
 
     return () => {
@@ -174,36 +155,26 @@ const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
     dispatch,
     userId,
     hasAttemptedFetch,
-    sessionStatus,
     simulateProgress,
     updateOperationProgress,
   ]);
 
   const isLoading =
-    sessionStatus === "loading" ||
     (!hasAttemptedFetch && (profileLoading || eventsStatus === "loading")) ||
     (hasAttemptedFetch && !allOperationsComplete);
 
   const hasError = profileError || eventsError;
   const combinedError = hasError ? profileError || eventsError : null;
 
-  // Check if data is ready
   const isDataReady =
     profile !== null &&
     eventsStatus === "succeeded" &&
     events !== null &&
     allOperationsComplete;
 
-  if (sessionStatus === "unauthenticated") {
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center p-2">
-        <h1 className="text-3xl font-bold text-primary">Please Login First</h1>
-        <Button>
-          <Link href={"/authclient/Login"}>Click here</Link>
-        </Button>
-      </div>
-    );
-  }
+  const totalProgress = Math.floor(
+    operations.reduce((acc, op) => acc + op.progress, 0) / operations.length
+  );
 
   if (hasError) {
     return <ErrorState error={combinedError} />;
@@ -217,7 +188,14 @@ const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
           <Progress value={totalProgress} className="h-2" />
         </div>
         <div className="text-sm text-muted-foreground">
-          {getLoadingMessage()}
+          {totalProgress === 100 ? (
+            "Setup complete"
+          ) : (
+            <p>
+              Loading data, please wait{" "}
+              <span className="animate-bounce">...</span>
+            </p>
+          )}
         </div>
         <div className="text-sm font-medium">{totalProgress}%</div>
       </div>
