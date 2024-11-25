@@ -57,6 +57,7 @@ export const config: NextAuthConfig = {
           return {
             id: user._id.toString(),
             email: user.email,
+            image: user.image,
             name: user.name,
             role: user.role,
             provider: user.provider,
@@ -96,6 +97,7 @@ export const config: NextAuthConfig = {
             dbUser = await User.create({
               email: user.email,
               name: user.name,
+              image: user.image,
               provider: account.provider,
               providerId: account.providerAccountId,
               role: 'user', // Default role
@@ -137,6 +139,7 @@ export const config: NextAuthConfig = {
           session.user.role = user.role;
           session.user.email = user.email;
           session.user.name = user.name;
+          session.user.image = user.image;
           session.user.provider = user.provider;
           session.user.providerId = user.providerId;
           session.user.createdAt = user.createdAt;

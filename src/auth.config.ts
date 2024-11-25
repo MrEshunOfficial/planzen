@@ -5,6 +5,7 @@ export type AuthUser = {
   id: string;
   role: string;
   email: string | null;
+  image: string | null;
   name: string | null;
   provider: string | null;
   providerId: string | null;
@@ -19,6 +20,7 @@ declare module 'next-auth' {
       id: string;
       role: string;
       email: string | null;
+      image: string | null;
       name: string | null;
       provider: string | null;
       providerId: string | null;
