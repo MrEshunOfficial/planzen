@@ -9,7 +9,6 @@ import {
   Link as LinkIcon2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { EventType, Priority, RepeatType } from "@/store/event.types";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -17,6 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { EventType, Priority, RepeatType } from "@/store/event.types";
 import { IEvent } from "@/store/event.slice";
 
 interface EventProps extends Partial<IEvent> {

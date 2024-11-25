@@ -35,11 +35,9 @@ import {
   FilterIcon,
   SortAscIcon,
   SortDescIcon,
-  ArrowUpDown,
-  Menu,
+  MoreVertical,
 } from "lucide-react";
 import EventForm from "./EventForm";
-
 import { RootState } from "@/store";
 import {
   setSearchTerm,
@@ -50,7 +48,6 @@ import {
   SortField,
   SortOrder,
 } from "@/store/event.slice";
-
 import {
   CalendarView,
   EventType,
@@ -348,7 +345,7 @@ const CalendarToolBar = ({
               size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
-              <Menu className="h-4 w-4" />
+              <MoreVertical className="h-4 w-4" />
             </Button>
             <AddEventButton />
           </div>

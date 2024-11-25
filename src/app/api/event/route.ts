@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await auth();
     
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -112,36 +112,27 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await auth();
-    
-    if (!session?.user?.email) {
+    const userId = session?.user?.id;
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
+    
     await connect();
     
-    const { searchParams } = new URL(req.url);
-    const type = searchParams.get('type');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-
-    const query: any = { userId: session.user.id };
+    // Changed from findOne to find to get all events for the user
+    const userEvents = await Event.find({ userId }).select('-__v').lean();
     
-    if (type) {
-      query.type = type;
+    // Return empty array if no events found (instead of 404 error)
+    if (!userEvents) {
+      return NextResponse.json([], { status: 200 });
     }
     
-    if (startDate || endDate) {
-      query.date = {};
-      if (startDate) query.date.$gte = new Date(startDate);
-      if (endDate) query.date.$lte = new Date(endDate);
-    }
-
-    const events = await Event.find(query).sort({ date: 1 });
-    return NextResponse.json(events);
+    return NextResponse.json(userEvents, { status: 200 });
   } catch (error) {
+    console.error('Error fetching events:', error);
     return handleError(error);
   }
 }

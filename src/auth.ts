@@ -33,8 +33,8 @@ declare module 'next-auth' {
   }
 }
 
-const publicPaths: string[] = ['/', '/authclient/Register', '/authclient/Login'];
-const privatePaths: string[] = ['/profile'];
+const publicPaths: string[] = ['/authclient/Register', '/authclient/Login'];
+const privatePaths: string[] = ['/', '/profile'];
 
 interface CustomToken extends JWT {
   id?: string;

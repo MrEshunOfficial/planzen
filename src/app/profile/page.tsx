@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { User, Camera, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,14 +16,8 @@ import { cn } from "@/lib/utils";
 import moment from "moment";
 import ProfileForm from "./ProfileForm";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  IUserProfile,
-  selectProfile,
-  selectProfileStatus,
-  updateProfilePicture,
-} from "@/store/profile.slice";
+
 import { toast } from "@/hooks/use-toast";
-import { AppDispatch } from "@/store";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +26,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import {
+  IUserProfile,
+  selectProfile,
+  selectProfileStatus,
+  updateProfilePicture,
+} from "@/store/profile.slice";
+import { AppDispatch } from "@/store";
 
 interface ProfileStats {
   tasks: number;
@@ -181,25 +183,59 @@ export default function ProfilePage() {
     streak: 12,
   };
 
-  if (profileStatus === "loading") {
+  const LoadingState = () => {
+    const [progress, setProgress] = useState(0);
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setProgress((prevProgress) => {
+          if (prevProgress >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return prevProgress + Math.random() * 15;
+        });
+      }, 300);
+
+      return () => clearInterval(interval);
+    }, []);
+
     return (
-      <div className="w-full h-[50vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex flex-col justify-center items-center h-full gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="w-64">
+          <Progress value={Math.min(progress, 100)} className="h-2" />
+        </div>
+        <div className="text-sm font-medium">
+          {Math.floor(Math.min(progress, 100))}%
+        </div>
       </div>
     );
+  };
+
+  if (profileStatus === "loading") {
+    return <LoadingState />;
   }
+
+  // if (profileStatus === "loading") {
+  //   return (
+  //     <div className="w-full h-[50vh] flex items-center justify-center">
+  //       <Loader2 className="h-8 w-8 animate-spin" />
+  //     </div>
+  //   );
+  // }
 
   if (!profile && (profileStatus === "idle" || profileStatus === "failed")) {
     return (
       <div className="w-full max-w-5xl mx-auto px-4">
-        <Card className="mt-8">
+        <Card className="mt-8 dark:bg-gray-700">
           <CardHeader>
             <CardTitle>Complete Your Profile</CardTitle>
             <CardDescription>
               Welcome! Please complete your profile to get started.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0 border-none">
             <ProfileForm mode="create" />
           </CardContent>
         </Card>

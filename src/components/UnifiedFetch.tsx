@@ -1,72 +1,229 @@
 "use client";
 
-import { useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
+import { ErrorState } from "@/components/ui/LoadingContent";
+import { toast } from "@/hooks/use-toast";
+
+import { Progress } from "@/components/ui/progress";
 import { AppDispatch, RootState } from "@/store";
+import { fetchUserProfile } from "@/store/profile.slice";
 import {
-  fetchUserProfile,
-  selectProfileStatus,
-  selectProfileError,
-} from "@/store/profile.slice";
-import { fetchEvents } from "@/store/event.slice";
+  fetchEvents,
+  selectEvents,
+  selectEventsStatus,
+} from "@/store/event.slice";
 
 interface UnifiedFetchProps {
   children: React.ReactNode;
 }
 
-const UnifiedFetch = ({ children }: UnifiedFetchProps) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { data: session, status: authStatus } = useSession();
+interface FetchOperation {
+  name: string;
+  status: "pending" | "loading" | "completed";
+  progress: number;
+}
 
-  // Select states from both slices
-  const profileStatus = useSelector(selectProfileStatus);
-  const profileError = useSelector(selectProfileError);
-  const eventsLoading = useSelector((state: RootState) => state.events.loading);
+const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { data: session, status: sessionStatus } = useSession();
+  const userId = session?.user?.id;
+
+  const {
+    profile,
+    error: profileError,
+    loading: profileLoading,
+  } = useSelector((state: RootState) => state.profile);
+
+  const eventsStatus = useSelector(selectEventsStatus);
+  const events = useSelector(selectEvents);
   const eventsError = useSelector((state: RootState) => state.events.error);
 
-  useEffect(() => {
-    // Only fetch data if user is authenticated
-    if (authStatus === "authenticated" && session?.user?.id) {
-      dispatch(fetchUserProfile());
-      dispatch(fetchEvents(session.user.id));
-    }
-  }, [dispatch, authStatus, session?.user?.id]);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+  const [allOperationsComplete, setAllOperationsComplete] = useState(false);
+  const [operations, setOperations] = useState<FetchOperation[]>([
+    { name: "Profile", status: "pending", progress: 0 },
+    { name: "Events", status: "pending", progress: 0 },
+  ]);
 
-  // Show loading state while authenticating or fetching any data
-  if (
-    authStatus === "loading" ||
-    (authStatus === "authenticated" &&
-      (profileStatus === "loading" || eventsLoading))
-  ) {
+  const totalProgress = Math.floor(
+    operations.reduce((acc, op) => acc + op.progress, 0) / operations.length
+  );
+
+  const getLoadingMessage = () => {
+    if (totalProgress === 100) return "Setup complete";
     return (
-      <div className="flex items-center justify-center w-screen min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <p>
+        Loading data, please wait <span className="animate-bounce">...</span>{" "}
+      </p>
+    );
+  };
+
+  const updateOperationProgress = useCallback(
+    (
+      operationIndex: number,
+      progress: number,
+      status?: "loading" | "completed"
+    ) => {
+      setOperations((prevOps) =>
+        prevOps.map((op, index) =>
+          index === operationIndex
+            ? {
+                ...op,
+                progress,
+                status: status || (progress === 100 ? "completed" : "loading"),
+              }
+            : op
+        )
+      );
+    },
+    []
+  );
+
+  const simulateProgress = useCallback(
+    (operationIndex: number) => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 85) {
+          progress = 85;
+          clearInterval(interval);
+        }
+        updateOperationProgress(operationIndex, Math.min(progress, 85));
+      }, 300);
+      return interval;
+    },
+    [updateOperationProgress]
+  );
+
+  // Check if all operations are complete
+  useEffect(() => {
+    if (operations.every((op) => op.status === "completed")) {
+      setAllOperationsComplete(true);
+    }
+  }, [operations]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const intervals: NodeJS.Timeout[] = [];
+
+    const fetchData = async () => {
+      try {
+        // Profile fetch
+        setOperations((prev) =>
+          prev.map((op, i) => (i === 0 ? { ...op, status: "loading" } : op))
+        );
+        const profileInterval = simulateProgress(0);
+        intervals.push(profileInterval);
+
+        await dispatch(fetchUserProfile()).unwrap();
+        if (isMounted) {
+          clearInterval(profileInterval);
+          updateOperationProgress(0, 100, "completed");
+        }
+
+        // Events fetch
+        if (isMounted) {
+          setOperations((prev) =>
+            prev.map((op, i) => (i === 1 ? { ...op, status: "loading" } : op))
+          );
+          const eventsInterval = simulateProgress(1);
+          intervals.push(eventsInterval);
+
+          await dispatch(fetchEvents()).unwrap();
+          if (isMounted) {
+            clearInterval(eventsInterval);
+            updateOperationProgress(1, 100, "completed");
+          }
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          intervals.forEach(clearInterval);
+          toast({
+            title: "System Error",
+            description:
+              "An error occurred while fetching data. Please try again later.",
+            duration: 7000,
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (isMounted) {
+          setHasAttemptedFetch(true);
+        }
+      }
+    };
+
+    if (userId && !hasAttemptedFetch) {
+      fetchData();
+    }
+
+    if (!userId && sessionStatus !== "loading") {
+      setHasAttemptedFetch(true);
+    }
+
+    return () => {
+      isMounted = false;
+      intervals.forEach(clearInterval);
+    };
+  }, [
+    dispatch,
+    userId,
+    hasAttemptedFetch,
+    sessionStatus,
+    simulateProgress,
+    updateOperationProgress,
+  ]);
+
+  const isLoading =
+    sessionStatus === "loading" ||
+    (!hasAttemptedFetch && (profileLoading || eventsStatus === "loading")) ||
+    (hasAttemptedFetch && !allOperationsComplete);
+
+  const hasError = profileError || eventsError;
+  const combinedError = hasError ? profileError || eventsError : null;
+
+  // Check if data is ready
+  const isDataReady =
+    profile !== null &&
+    eventsStatus === "succeeded" &&
+    events !== null &&
+    allOperationsComplete;
+
+  if (sessionStatus === "unauthenticated") {
+    return (
+      <div className="w-full h-[77vh] flex items-center justify-center p-2">
+        Please login first
       </div>
     );
   }
 
-  // Show errors if either fetch failed
-  if (profileStatus === "failed" && profileError) {
+  if (hasError) {
+    return <ErrorState error={combinedError} />;
+  }
+
+  if (isLoading) {
     return (
-      <Alert variant="destructive" className="max-w-md mx-auto mt-4">
-        <AlertDescription>{profileError}</AlertDescription>
-      </Alert>
+      <div className="flex flex-col items-center justify-center w-screen min-h-screen gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="w-64">
+          <Progress value={totalProgress} className="h-2" />
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {getLoadingMessage()}
+        </div>
+        <div className="text-sm font-medium">{totalProgress}%</div>
+      </div>
     );
   }
 
-  if (eventsError) {
-    return (
-      <Alert variant="destructive" className="max-w-md mx-auto mt-4">
-        <AlertDescription>{eventsError}</AlertDescription>
-      </Alert>
-    );
+  if (isDataReady) {
+    return <>{children}</>;
   }
 
-  // Render children once everything is ready
-  return <>{children}</>;
+  return null;
 };
 
-export default UnifiedFetch;
+export default UnifiedProfileFetch;

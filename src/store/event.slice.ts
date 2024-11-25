@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { RepeatType, EventType, Priority, IReminder, IRepeat, ITodo, IRoutine, ISpecialEvent, IAppointment,  } from './event.types';
+import api from '@/lib/api';
+import { RepeatType, EventType, Priority, IReminder, IRepeat, ITodo, IRoutine, ISpecialEvent, IAppointment } from './event.types';
+import { AxiosResponse } from 'axios';
 
-
-// Define the filter and sort types
+// Type definitions
 export type SortField = 'date' | 'title' | 'priority' | 'type' | 'createdAt';
 export type SortOrder = 'asc' | 'desc';
 
@@ -38,7 +39,7 @@ interface EventsFilter {
 interface EventsState {
   events: IEvent[];
   filteredEvents: IEvent[];
-  loading: boolean;
+  loading: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
   filter: EventsFilter;
   sort: {
@@ -51,7 +52,7 @@ interface EventsState {
 const initialState: EventsState = {
   events: [],
   filteredEvents: [],
-  loading: false,
+  loading: 'idle',
   error: null,
   filter: {
     searchTerm: '',
@@ -67,67 +68,131 @@ const initialState: EventsState = {
   selectedEventId: null
 };
 
-// Async thunks
-export const fetchEvents = createAsyncThunk(
-  'events/fetchEvents',
-  async (userId: string) => {
-    const response = await fetch(`/api/event`);
-    if (!response.ok) throw new Error('Failed to fetch events');
-    return response.json() as Promise<IEvent[]>;
+// Create the async thunk with proper type parameters
+export const fetchEvents = createAsyncThunk<
+  IEvent[],                    // Return type
+  void,                       // First argument type (none in this case)
+  {                           // ThunkAPI configuration
+    rejectValue: string;      // Type for rejectWithValue
   }
-);
+>('events/fetchEvents', async (_, { rejectWithValue }) => {
+  try {
+    const response: AxiosResponse<IEvent[]> = await api.get<IEvent[]>('/event');
+    
+    // Validate response data
+    if (!response.data || !Array.isArray(response.data)) {
+      console.error('Invalid response format:', response.data);
+      return rejectWithValue('Invalid response format from server');
+    }
 
-export const createEvent = createAsyncThunk(
-  'events/createEvent',
-  async (event: Partial<IEvent>) => {
-    const response = await fetch('/api/event', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(event)
-    });
-    if (!response.ok) throw new Error('Failed to create event');
-    return response.json() as Promise<IEvent>;
+    // Type guard to ensure we have an array of IEvent objects
+    const isValidEvent = (event: any): event is IEvent => {
+      return (
+        typeof event === 'object' &&
+        event !== null &&
+        '_id' in event &&
+        'userId' in event &&
+        'title' in event &&
+        'type' in event &&
+        'date' in event
+      );
+    };
+
+    // Validate each event in the array
+    if (!response.data.every(isValidEvent)) {
+      console.error('Invalid event data in response');
+      return rejectWithValue('Invalid event data received');
+    }
+
+    return response.data;
+  } catch (err: unknown) {
+    // Type guard for error handling
+    const error = err as { 
+      response?: { 
+        status?: number; 
+        data?: { 
+          error?: string 
+        } 
+      }; 
+      message?: string 
+    };
+
+    // Log the error for debugging
+    console.error('Error fetching events:', error);
+
+    // Handle specific error cases
+    if (error.response?.status === 401) {
+      return rejectWithValue('Unauthorized: Please log in again');
+    }
+    if (error.response?.status === 404) {
+      return rejectWithValue('No events found');
+    }
+    if (error.response?.status && error.response.status >= 500) {
+      return rejectWithValue('Server error: Please try again later');
+    }
+    
+    // Generic error handling
+    return rejectWithValue(
+      error.response?.data?.error || 
+      error.message || 
+      'Failed to fetch events'
+    );
   }
-);
+});
 
-export const updateEvent = createAsyncThunk(
-  'events/updateEvent',
-  async ({ id, event }: { id: string; event: Partial<IEvent> }) => {
-    const response = await fetch(`/api/event/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(event)
-    });
-    if (!response.ok) throw new Error('Failed to update event');
-    return response.json() as Promise<IEvent>;
+export const createEvent = createAsyncThunk<
+  IEvent,
+  Partial<IEvent>,
+  { rejectValue: string }
+>('events/createEvent', async (eventData, { rejectWithValue }) => {
+  try {
+    const response = await api.post('/event', eventData);
+    return response.data;
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.error || 'Failed to create event');
   }
-);
+});
 
-export const toggleTodoCompletion = createAsyncThunk(
-  'events/toggleTodoCompletion',
-  async ({ eventId, isCompleted }: { eventId: string; isCompleted: boolean }) => {
-    const response = await fetch(`/api/event/${eventId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        'todoData.isCompleted': isCompleted
-      })
-    });
-    if (!response.ok) throw new Error('Failed to update todo completion status');
-    return response.json() as Promise<IEvent>;
+export const updateEvent = createAsyncThunk<
+  IEvent,
+  { id: string; event: Partial<IEvent> },
+  { rejectValue: string }
+>('events/updateEvent', async ({ id, event }, { rejectWithValue }) => {
+  try {
+    const response = await api.put(`/event/${id}`, event);
+    return response.data;
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.error || 'Failed to update event');
   }
-);
+});
 
-export const deleteEvent = createAsyncThunk(
-  'events/deleteEvent',
-  async (id: string) => {
-    const response = await fetch(`/api/event/${id}`, {
-      method: 'DELETE'
+export const toggleTodoCompletion = createAsyncThunk<
+  IEvent,
+  { eventId: string; isCompleted: boolean },
+  { rejectValue: string }
+>('events/toggleTodoCompletion', async ({ eventId, isCompleted }, { rejectWithValue }) => {
+  try {
+    const response = await api.put(`/event/${eventId}`, {
+      'todoData.isCompleted': isCompleted
     });
-    if (!response.ok) throw new Error('Failed to delete event');
+    return response.data;
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.error || 'Failed to update todo completion status');
+  }
+});
+
+export const deleteEvent = createAsyncThunk<
+  string,
+  string,
+  { rejectValue: string }
+>('events/deleteEvent', async (id, { rejectWithValue }) => {
+  try {
+    await api.delete(`/event/${id}`);
     return id;
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.error || 'Failed to delete event');
   }
-);
+});
 
 // Helper functions
 const filterEvents = (events: IEvent[], filter: EventsFilter): IEvent[] => {
@@ -206,6 +271,9 @@ const eventsSlice = createSlice({
   name: 'events',
   initialState,
   reducers: {
+    resetEventsState: (state) => {
+      return { ...initialState };
+    },
     setSearchTerm: (state, action: PayloadAction<string>) => {
       state.filter.searchTerm = action.payload;
       state.filteredEvents = sortEvents(
@@ -277,12 +345,13 @@ const eventsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Fetch events
       .addCase(fetchEvents.pending, (state) => {
-        state.loading = true;
+        state.loading = 'loading';
         state.error = null;
       })
       .addCase(fetchEvents.fulfilled, (state, action) => {
-        state.loading = false;
+        state.loading = 'succeeded';
         state.events = action.payload;
         state.filteredEvents = sortEvents(
           filterEvents(action.payload, state.filter),
@@ -291,10 +360,16 @@ const eventsSlice = createSlice({
         );
       })
       .addCase(fetchEvents.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to fetch events';
+        state.loading = 'failed';
+        state.error = action.payload as string;
+      })
+      // Create event
+      .addCase(createEvent.pending, (state) => {
+        state.loading = 'loading';
+        state.error = null;
       })
       .addCase(createEvent.fulfilled, (state, action) => {
+        state.loading = 'succeeded';
         state.events.push(action.payload);
         state.filteredEvents = sortEvents(
           filterEvents(state.events, state.filter),
@@ -302,7 +377,17 @@ const eventsSlice = createSlice({
           state.sort.order
         );
       })
+      .addCase(createEvent.rejected, (state, action) => {
+        state.loading = 'failed';
+        state.error = action.payload as string;
+      })
+      // Update event
+      .addCase(updateEvent.pending, (state) => {
+        state.loading = 'loading';
+        state.error = null;
+      })
       .addCase(updateEvent.fulfilled, (state, action) => {
+        state.loading = 'succeeded';
         const index = state.events.findIndex(e => e._id === action.payload._id);
         if (index !== -1) {
           state.events[index] = action.payload;
@@ -313,7 +398,17 @@ const eventsSlice = createSlice({
           );
         }
       })
-     .addCase(toggleTodoCompletion.fulfilled, (state, action) => {
+      .addCase(updateEvent.rejected, (state, action) => {
+        state.loading = 'failed';
+        state.error = action.payload as string;
+      })
+      // Toggle todo completion
+      .addCase(toggleTodoCompletion.pending, (state) => {
+        state.loading = 'loading';
+        state.error = null;
+      })
+      .addCase(toggleTodoCompletion.fulfilled, (state, action) => {
+        state.loading = 'succeeded';
         const index = state.events.findIndex(e => e._id === action.payload._id);
         if (index !== -1) {
           state.events[index] = action.payload;
@@ -323,8 +418,18 @@ const eventsSlice = createSlice({
             state.sort.order
           );
         }
+      })
+      .addCase(toggleTodoCompletion.rejected, (state, action) => {
+        state.loading = 'failed';
+        state.error = action.payload as string;
+      })
+      // Delete event
+      .addCase(deleteEvent.pending, (state) => {
+        state.loading = 'loading';
+        state.error = null;
       })
       .addCase(deleteEvent.fulfilled, (state, action) => {
+        state.loading = 'succeeded';
         state.events = state.events.filter(e => e._id !== action.payload);
         state.filteredEvents = sortEvents(
           filterEvents(state.events, state.filter),
@@ -334,11 +439,16 @@ const eventsSlice = createSlice({
         if (state.selectedEventId === action.payload) {
           state.selectedEventId = null;
         }
+      })
+      .addCase(deleteEvent.rejected, (state, action) => {
+        state.loading = 'failed';
+        state.error = action.payload as string;
       });
   }
 });
 
 export const {
+  resetEventsState,
   setSearchTerm,
   setEventTypeFilter,
   setPriorityFilter,
@@ -349,5 +459,46 @@ export const {
   setSelectedEvent,
   clearFilters
 } = eventsSlice.actions;
+
+// Selectors
+export const selectEvents = (state: { events: EventsState }) => state.events.events;
+export const selectFilteredEvents = (state: { events: EventsState }) => state.events.filteredEvents;
+export const selectEventsStatus = (state: { events: EventsState }) => state.events.loading;
+export const selectEventsError = (state: { events: EventsState }) => state.events.error;
+export const selectSelectedEventId = (state: { events: EventsState }) => state.events.selectedEventId;
+export const selectEventsFilter = (state: { events: EventsState }) => state.events.filter;
+export const selectEventsSort = (state: { events: EventsState }) => state.events.sort;
+
+// Helper selector to get an event by ID
+export const selectEventById = (state: { events: EventsState }, eventId: string) => 
+  state.events.events.find(event => event._id === eventId);
+
+// Helper selector to get filtered events for a specific date
+export const selectFilteredEventsByDate = (state: { events: EventsState }, date: Date) => 
+  state.events.filteredEvents.filter(event => 
+    new Date(event.date).toDateString() === date.toDateString()
+  );
+
+// Helper selector to get upcoming events within the next n days
+export const selectUpcomingEvents = (state: { events: EventsState }, days: number) => {
+  const today = new Date();
+  const futureDate = new Date();
+  futureDate.setDate(today.getDate() + days);
+  
+  return state.events.filteredEvents.filter(event => {
+    const eventDate = new Date(event.date);
+    return eventDate >= today && eventDate <= futureDate;
+  });
+};
+
+// Helper selector to get overdue todos
+export const selectOverdueTodos = (state: { events: EventsState }) => {
+  const today = new Date();
+  return state.events.filteredEvents.filter(event => 
+    event.type === EventType.TODO && 
+    !event.todoData?.isCompleted &&
+    new Date(event.date) < today
+  );
+};
 
 export default eventsSlice.reducer;

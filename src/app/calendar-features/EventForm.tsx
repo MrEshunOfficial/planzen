@@ -13,7 +13,7 @@ import { AppointmentData, AppointmentForm } from "./AppointmentForm";
 import { ReminderComponent } from "./EventReminder";
 import { useDispatch } from "react-redux";
 import { useSession } from "next-auth/react";
-import { createEvent, IEvent } from "@/store/event.slice";
+import { Loader2 } from "lucide-react";
 import {
   IRepeat,
   EventType,
@@ -25,7 +25,7 @@ import {
   AppointmentType,
 } from "@/store/event.types";
 import { AppDispatch } from "@/store";
-import { Loader2 } from "lucide-react";
+import { createEvent, IEvent } from "@/store/event.slice";
 
 export default function EventForm() {
   const [activeTab, setActiveTab] = useState<
@@ -262,7 +262,7 @@ export default function EventForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full flex flex-col gap-2 sm:max-h-[30vh] overflow-auto"
+      className="w-full flex flex-col gap-2 overflow-auto"
     >
       <input
         type="text"

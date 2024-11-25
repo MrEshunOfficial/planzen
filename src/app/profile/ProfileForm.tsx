@@ -1,3 +1,4 @@
+"use client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
@@ -24,8 +25,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Toaster } from "@/components/ui/toaster";
+import { useSession } from "next-auth/react";
+import { useEffect } from "react";
 
 const profileFormSchema = z.object({
+  userId: z.string(),
   name: z
     .string()
     .min(2, "Name must be at least 2 characters")
@@ -64,11 +68,17 @@ export default function ProfileForm({ mode = "create" }: ProfileFormProps) {
   const profile = useSelector(selectProfile);
   const status = useSelector(selectProfileStatus);
 
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+  const fullName = session?.user?.name;
+  const userMail = session?.user?.email;
+
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues:
       mode === "update"
         ? {
+            userId: profile?.userId || "",
             name: profile?.name || "",
             username: profile?.username || "",
             email: profile?.email || "",
@@ -78,6 +88,7 @@ export default function ProfileForm({ mode = "create" }: ProfileFormProps) {
             website: profile?.website || "",
           }
         : {
+            userId: "",
             name: "",
             username: "",
             email: "",
@@ -87,6 +98,15 @@ export default function ProfileForm({ mode = "create" }: ProfileFormProps) {
             website: "",
           },
   });
+
+  // Auto-populate fields from session data
+  useEffect(() => {
+    if (session?.user) {
+      form.setValue("userId", userId || "");
+      form.setValue("name", fullName || "");
+      form.setValue("email", userMail || "");
+    }
+  }, [session, form, userId, fullName, userMail]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     try {
@@ -130,6 +150,19 @@ export default function ProfileForm({ mode = "create" }: ProfileFormProps) {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Hidden userId field */}
+              <FormField
+                control={form.control}
+                name="userId"
+                render={({ field }) => (
+                  <FormItem className="hidden">
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
               {/* Form Fields Grid */}
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Name */}
@@ -147,6 +180,7 @@ export default function ProfileForm({ mode = "create" }: ProfileFormProps) {
                           placeholder="Your full name"
                           {...field}
                           className="text-sm md:text-base"
+                          disabled
                         />
                       </FormControl>
                       <FormMessage className="text-xs md:text-sm" />
@@ -195,6 +229,7 @@ export default function ProfileForm({ mode = "create" }: ProfileFormProps) {
                           placeholder="your@email.com"
                           {...field}
                           className="text-sm md:text-base"
+                          disabled
                         />
                       </FormControl>
                       <FormMessage className="text-xs md:text-sm" />

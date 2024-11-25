@@ -7,10 +7,23 @@ const api = axios.create({
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    // Handle unauthorized access
     if (error.response?.status === 401) {
-      signOut({ callbackUrl: '/authclient/Login' });
+      await signOut({ callbackUrl: '/authclient/Login' });
+      return Promise.reject(error);
     }
+    
+    // Handle profile not found
+    if (error.response?.status === 404 && error.response?.data?.error === 'Profile not found') {
+      return Promise.reject({
+        response: {
+          status: 404,
+          data: { error: 'NO_PROFILE' }
+        }
+      });
+    }
+    
     return Promise.reject(error);
   }
 );
