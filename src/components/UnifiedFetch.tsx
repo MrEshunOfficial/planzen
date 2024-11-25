@@ -26,6 +26,17 @@ interface FetchOperation {
   progress: number;
 }
 
+const isNetworkError = (error: any): boolean => {
+  return (
+    error &&
+    (error.name === "NetworkError" ||
+      error.message?.toLowerCase().includes("network") ||
+      error.message?.toLowerCase().includes("connection") ||
+      error.code === "ECONNABORTED" ||
+      error.type === "network")
+  );
+};
+
 const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { data: session } = useSession();
@@ -104,10 +115,18 @@ const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
         const profileInterval = simulateProgress(0);
         intervals.push(profileInterval);
 
-        await dispatch(fetchUserProfile()).unwrap();
-        if (isMounted) {
-          clearInterval(profileInterval);
-          updateOperationProgress(0, 100, "completed");
+        try {
+          await dispatch(fetchUserProfile()).unwrap();
+          if (isMounted) {
+            clearInterval(profileInterval);
+            updateOperationProgress(0, 100, "completed");
+          }
+        } catch (profileFetchError) {
+          // Allow component to proceed even if profile fetch fails
+          if (isMounted) {
+            clearInterval(profileInterval);
+            updateOperationProgress(0, 100, "completed");
+          }
         }
 
         // Events fetch
@@ -118,10 +137,18 @@ const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
           const eventsInterval = simulateProgress(1);
           intervals.push(eventsInterval);
 
-          await dispatch(fetchEvents()).unwrap();
-          if (isMounted) {
-            clearInterval(eventsInterval);
-            updateOperationProgress(1, 100, "completed");
+          try {
+            await dispatch(fetchEvents()).unwrap();
+            if (isMounted) {
+              clearInterval(eventsInterval);
+              updateOperationProgress(1, 100, "completed");
+            }
+          } catch (eventsFetchError) {
+            // Allow component to proceed even if events fetch fails
+            if (isMounted) {
+              clearInterval(eventsInterval);
+              updateOperationProgress(1, 100, "completed");
+            }
           }
         }
       } catch (err: any) {
@@ -145,6 +172,13 @@ const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
     // Only fetch if we haven't attempted yet and have a userId
     if (!hasAttemptedFetch && userId) {
       fetchData();
+    } else if (!userId) {
+      // If no userId, mark operations as complete to allow rendering
+      setOperations((prev) =>
+        prev.map((op) => ({ ...op, status: "completed", progress: 100 }))
+      );
+      setHasAttemptedFetch(true);
+      setAllOperationsComplete(true);
     }
 
     return () => {
@@ -163,14 +197,11 @@ const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
     (!hasAttemptedFetch && (profileLoading || eventsStatus === "loading")) ||
     (hasAttemptedFetch && !allOperationsComplete);
 
-  const hasError = profileError || eventsError;
+  const hasError = isNetworkError(profileError) || isNetworkError(eventsError);
+
   const combinedError = hasError ? profileError || eventsError : null;
 
-  const isDataReady =
-    profile !== null &&
-    eventsStatus === "succeeded" &&
-    events !== null &&
-    allOperationsComplete;
+  const isDataReady = hasAttemptedFetch && (allOperationsComplete || !userId);
 
   const totalProgress = Math.floor(
     operations.reduce((acc, op) => acc + op.progress, 0) / operations.length

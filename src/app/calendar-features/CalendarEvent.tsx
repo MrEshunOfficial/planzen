@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Repeat,
   Link as LinkIcon2,
+  MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -19,12 +20,14 @@ import {
 import { EventType, Priority, RepeatType } from "@/store/event.types";
 import { IEvent } from "@/store/event.slice";
 
-interface EventProps extends Partial<IEvent> {
+interface CalendarEventProps extends Partial<IEvent> {
   className?: string;
   onEdit?: (id: string) => void;
+  additionalEventsCount?: number;
+  onMoreClick?: () => void;
 }
 
-const CalendarEvent = ({
+const CalendarEvent: React.FC<CalendarEventProps> = ({
   title,
   type,
   startTime,
@@ -36,7 +39,31 @@ const CalendarEvent = ({
   appointmentData,
   reminders,
   repeat,
-}: EventProps) => {
+  additionalEventsCount = 0,
+  onMoreClick,
+  className = "",
+}) => {
+  // More events rendering
+  if (additionalEventsCount > 0) {
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-center",
+          "bg-gray-100 text-gray-700",
+          "rounded-md px-2 py-1",
+          "text-xs font-semibold",
+          "cursor-pointer hover:bg-gray-200",
+          "transition-colors",
+          className
+        )}
+        onClick={onMoreClick}
+      >
+        <MoreHorizontal className="mr-1" size={16} />+{additionalEventsCount}{" "}
+        More
+      </div>
+    );
+  }
+
   const formatTime = (date: Date | string | undefined | null) => {
     if (!date) return "";
     return new Date(date).toLocaleTimeString("en-US", {
@@ -49,15 +76,15 @@ const CalendarEvent = ({
   const getTypeStyles = () => {
     switch (type) {
       case EventType.TODO:
-        return "border-l-4 border-blue-500 bg-blue-50/80 dark:bg-blue-950/20 dark:border-blue-400";
+        return "border-l-4 border-blue-500 bg-blue-50/80 dark:bg-blue-950/70 dark:border-blue-400";
       case EventType.ROUTINE:
-        return "border-l-4 border-green-500 bg-green-50/80 dark:bg-green-950/20 dark:border-green-400";
+        return "border-l-4 border-green-500 bg-green-50/80 dark:bg-green-950/70 dark:border-green-400";
       case EventType.SPECIAL_EVENT:
-        return "border-l-4 border-purple-500 bg-purple-50/80 dark:bg-purple-950/20 dark:border-purple-400";
+        return "border-l-4 border-purple-500 bg-purple-50/80 dark:bg-purple-950/70 dark:border-purple-400";
       case EventType.APPOINTMENT:
-        return "border-l-4 border-orange-500 bg-orange-50/80 dark:bg-orange-950/20 dark:border-orange-400";
+        return "border-l-4 border-orange-500 bg-orange-50/80 dark:bg-orange-950/70 dark:border-orange-400";
       default:
-        return "border-l-4 border-gray-500 bg-gray-50/80 dark:bg-gray-950/20 dark:border-gray-400";
+        return "border-l-4 border-gray-500 bg-gray-50/80 dark:bg-gray-950/70 dark:border-gray-400";
     }
   };
 
@@ -74,13 +101,9 @@ const CalendarEvent = ({
     }
   };
 
-  const getEventPriority = () => {
-    return todoData?.priority || routineData?.priority;
-  };
-
-  const getEventLocation = () => {
-    return specialEventData?.location || appointmentData?.venue;
-  };
+  const getEventPriority = () => todoData?.priority || routineData?.priority;
+  const getEventLocation = () =>
+    specialEventData?.location || appointmentData?.venue;
 
   return (
     <TooltipProvider>
@@ -91,8 +114,8 @@ const CalendarEvent = ({
           "hover:ring-2 hover:ring-opacity-50",
           "hover:ring-black/5 dark:hover:ring-white/10",
           "text-gray-900 dark:text-gray-100",
-          getEventLocation() && "border-b border-gray-200 dark:border-gray-700",
-          getTypeStyles()
+          getTypeStyles(),
+          className
         )}
       >
         {/* Header section */}
@@ -133,6 +156,7 @@ const CalendarEvent = ({
           )}
         </div>
 
+        {/* Additional event details */}
         <div className="flex flex-col gap-2 mt-2">
           {getEventLocation() && (
             <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">

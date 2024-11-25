@@ -1,12 +1,11 @@
 // auth.ts
 import NextAuth from 'next-auth';
-import type { NextAuthConfig } from 'next-auth';
-import type { Account } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { User } from "@/models/authentication/authModel";
 import { connect } from './dbconfigue/dbConfigue';
-import { authConfig, AuthUser } from './auth.config';
+import { authConfig, AuthUser, CustomToken } from './auth.config';
+import type { NextAuthConfig, Session } from 'next-auth';
 
 export const config: NextAuthConfig = {
   ...authConfig,
@@ -57,7 +56,6 @@ export const config: NextAuthConfig = {
           return {
             id: user._id.toString(),
             email: user.email,
-            image: user.image,
             name: user.name,
             role: user.role,
             provider: user.provider,
@@ -97,7 +95,6 @@ export const config: NextAuthConfig = {
             dbUser = await User.create({
               email: user.email,
               name: user.name,
-              image: user.image,
               provider: account.provider,
               providerId: account.providerAccountId,
               role: 'user', // Default role
@@ -130,30 +127,33 @@ export const config: NextAuthConfig = {
       }
     },
 
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: CustomToken }) {
+      if (!token.email && !token.sub) {
+        return null as any;
+      }
+      
       try {
         const user = await User.findById(token.id);
-
+        
         if (user && session.user) {
           session.user.id = user._id.toString();
           session.user.role = user.role;
           session.user.email = user.email;
           session.user.name = user.name;
-          session.user.image = user.image;
           session.user.provider = user.provider;
           session.user.providerId = user.providerId;
           session.user.createdAt = user.createdAt;
           session.user.updatedAt = user.updatedAt;
-          session.sessionId = token.sessionId as string;
+          session.sessionId = token.sessionId;
         }
-
+        
         return session;
       } catch (error) {
-        console.error('Session error:', error);
+        console.error('Error fetching user data for session:', error);
         if (token && session.user) {
           session.user.id = token.id as string;
           session.user.role = token.role as string;
-          session.sessionId = token.sessionId as string;
+          session.sessionId = token.sessionId;
         }
         return session;
       }
@@ -168,7 +168,7 @@ export const config: NextAuthConfig = {
         return `${baseUrl}/authclient/Login`;
       }
 
-      if (url.startsWith('/')) {
+      if (url.startsWith('/profile')) {
         return `${baseUrl}${url}`;
       }
 

@@ -5,7 +5,6 @@ export enum EventType {
   SPECIAL_EVENT = 'special-event',
   APPOINTMENT = 'appointment'
 }
-
 export enum Priority {
   LOW = 'low',
   MEDIUM = 'medium',

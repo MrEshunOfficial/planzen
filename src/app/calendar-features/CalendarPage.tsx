@@ -6,11 +6,13 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
 import { EventClickArg } from "@fullcalendar/core";
+
 import CalendarEvent from "./CalendarEvent";
-import { CalendarCustomStyles } from "./CalendarCustomStyles";
 import { IEvent, setSelectedEvent } from "@/store/event.slice";
 import { AppDispatch, RootState } from "@/store";
 import EventDialog from "./EventDialog";
+import { EventType } from "@/store/event.types";
+import { CalendarCustomStyles } from "./CalendarCustomStyles";
 
 interface CalendarPageProps {
   calendarRef: React.RefObject<any>;
@@ -35,11 +37,11 @@ export default function CalendarPage({
   // Determine calendar view based on screen size
   const getInitialView = useCallback(() => {
     if (windowWidth < 640) {
-      return "timeGridDay";
+      return "timeGridDay"; // Small screens
     } else if (windowWidth < 1024) {
-      return "timeGridDay";
+      return "timeGridDay"; // Medium screens
     }
-    return "timeGridWeek";
+    return "dayGridMonth"; // Default to month view for larger screens
   }, [windowWidth]);
 
   // Handle window resize
@@ -64,6 +66,35 @@ export default function CalendarPage({
   };
 
   const renderEventContent = (eventInfo: any) => {
+    // If this is a "more" event, count additional events
+    if (
+      eventInfo.view.type === "dayGridMonth" &&
+      eventInfo.event.display === "popover"
+    ) {
+      const additionalEventsCount = filteredEvents.filter(
+        (event) =>
+          event.startTime &&
+          eventInfo.event.startTime &&
+          eventInfo.event.endTime &&
+          event.startTime >= eventInfo.event.startTime &&
+          event.startTime < eventInfo.event.endTime
+      ).length;
+
+      return (
+        <CalendarEvent
+          title=""
+          type={EventType.TODO}
+          additionalEventsCount={additionalEventsCount}
+          onMoreClick={() => {
+            const calendarApi = calendarRef.current.getApi();
+            calendarApi.changeView("timeGridDay");
+            calendarApi.gotoDate(eventInfo.event.start);
+          }}
+        />
+      );
+    }
+
+    // Existing event rendering logic
     const event = eventInfo.event;
     const eventData: IEvent = {
       _id: event.extendedProps._id,
@@ -85,7 +116,7 @@ export default function CalendarPage({
   };
 
   return (
-    <div className="flex flex-col h-[calc(98vh-12rem)] sm:h-[calc(98vh-14rem)]">
+    <div className="flex flex-col h-full">
       <CalendarCustomStyles />
       <div className="flex-1 min-h-0">
         <FullCalendar

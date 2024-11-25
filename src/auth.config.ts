@@ -1,11 +1,10 @@
-import type { NextAuthConfig } from 'next-auth';
-import { User as DbUser } from "@/models/authentication/authModel";
+import type { DefaultSession, NextAuthConfig } from 'next-auth';
+import { JWT } from 'next-auth/jwt';
 
 export type AuthUser = {
   id: string;
   role: string;
   email: string | null;
-  image: string | null;
   name: string | null;
   provider: string | null;
   providerId: string | null;
@@ -17,27 +16,35 @@ export type AuthUser = {
 declare module 'next-auth' {
   interface Session {
     user: {
-      id: string;
+      id?: string;
       role: string;
-      email: string | null;
-      image: string | null;
-      name: string | null;
-      provider: string | null;
-      providerId: string | null;
-      createdAt: Date;
-      updatedAt: Date;
-    }
-    sessionId: string;
+      email?: string | null;
+      name?: string | null;
+      provider?: string | null;
+      providerId?: string | null;
+      createdAt?: Date;
+      updatedAt?: Date;
+    } & DefaultSession['user'];
+    sessionId?: string;
   }
 
-  interface User extends AuthUser {}
-
-  interface JWT {
-    id: string;
+  interface User {
+    id?: string;
     role: string;
-    provider?: string;
-    sessionId: string;
+    email?: string | null;
+    name?: string | null;
+    provider?: string | null;
+    providerId?: string | null;
+    createdAt?: Date;
+    updatedAt?: Date;
   }
+}
+
+export interface CustomToken extends JWT {
+  id?: string;
+  role?: string;
+  provider?: string;
+  sessionId?: string;
 }
 
 // Define public and private paths
@@ -49,7 +56,7 @@ const publicPaths = [
   '/api/auth/callback/credentials'
 ] as const;
 
-const privatePaths = ['/profile', '/'] as const;
+const privatePaths = ['/', '/profile'] as const;
 
 // Convert array to Set for better performance
 const PUBLIC_PATHS = new Set<string>(publicPaths);

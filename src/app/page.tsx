@@ -79,7 +79,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex h-auto w-full overflow-hidden">
+    <div className="flex h-[90vh] w-full overflow-hidden mt-4">
       <main className="flex-1 flex flex-col md:flex-row gap-2 p-2 overflow-hidden">
         {/* Mobile Drawer */}
         {isMobile ? (
