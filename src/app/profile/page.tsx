@@ -217,14 +217,6 @@ export default function ProfilePage() {
     return <LoadingState />;
   }
 
-  // if (profileStatus === "loading") {
-  //   return (
-  //     <div className="w-full h-[50vh] flex items-center justify-center">
-  //       <Loader2 className="h-8 w-8 animate-spin" />
-  //     </div>
-  //   );
-  // }
-
   if (!profile && (profileStatus === "idle" || profileStatus === "failed")) {
     return (
       <div className="w-full max-w-5xl mx-auto px-4">
