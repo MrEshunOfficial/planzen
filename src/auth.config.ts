@@ -94,8 +94,12 @@ export const authConfig: NextAuthConfig = {
         return true;
       }
 
+      // More precise private path checking
+      const exactPrivatePaths = ['/profile']; // Be more specific
+      const isExactPrivatePath = exactPrivatePaths.includes(path);
+
       // Handle private paths
-      if (isPrivatePath(path)) {
+      if (isExactPrivatePath) {
         if (!isLoggedIn) {
           const callbackUrl = encodeURIComponent(path);
           return Response.redirect(
@@ -116,5 +120,5 @@ export const authConfig: NextAuthConfig = {
       return true;
     },
   },
-  providers: [], // Providers will be configured in auth.ts
+  providers: [],
 };
