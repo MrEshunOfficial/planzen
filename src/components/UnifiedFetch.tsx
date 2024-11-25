@@ -15,6 +15,8 @@ import {
   selectEvents,
   selectEventsStatus,
 } from "@/store/event.slice";
+import { Button } from "./ui/button";
+import Link from "next/link";
 
 interface UnifiedFetchProps {
   children: React.ReactNode;
@@ -194,8 +196,11 @@ const UnifiedProfileFetch: React.FC<UnifiedFetchProps> = ({ children }) => {
 
   if (sessionStatus === "unauthenticated") {
     return (
-      <div className="w-full h-[77vh] flex items-center justify-center p-2">
-        Please login first
+      <div className="w-full h-full flex flex-col items-center justify-center p-2">
+        <h1 className="text-3xl font-bold text-primary">Please Login First</h1>
+        <Button>
+          <Link href={"/authclient/Login"}>Click here</Link>
+        </Button>
       </div>
     );
   }
