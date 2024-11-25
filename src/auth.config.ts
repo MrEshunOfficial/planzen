@@ -1,5 +1,6 @@
 import type { DefaultSession, NextAuthConfig } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
+import { NextResponse } from 'next/server';
 
 export type AuthUser = {
   id: string;
@@ -53,18 +54,21 @@ const publicPaths = [
   '/authclient/Login',
   '/authclient/error',
   '/api/auth/callback/google',
-  '/api/auth/callback/credentials'
+  '/api/auth/callback/credentials',
 ] as const;
 
 const privatePaths = ['/', '/profile'] as const;
 
-// Convert array to Set for better performance
+// Convert arrays to Sets for better performance
 const PUBLIC_PATHS = new Set<string>(publicPaths);
 const PRIVATE_PATHS = new Set<string>(privatePaths);
 
-// Helper function to check if path starts with any private path
+// Normalize paths to lowercase for consistency
+const normalizePath = (path: string) => path.toLowerCase();
+
+// Helper function to check if path is a private route
 const isPrivatePath = (path: string) => {
-  return Array.from(PRIVATE_PATHS).some(privatePath => 
+  return Array.from(PRIVATE_PATHS).some((privatePath) =>
     path.startsWith(privatePath)
   );
 };
@@ -76,9 +80,9 @@ export const authConfig: NextAuthConfig = {
     error: '/authclient/error',
   },
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
+    async authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const path = nextUrl.pathname;
+      const path = normalizePath(nextUrl.pathname);
 
       // Handle callback URLs for OAuth providers
       if (path.startsWith('/api/auth/callback/')) {
@@ -87,23 +91,18 @@ export const authConfig: NextAuthConfig = {
 
       // Handle public paths
       if (PUBLIC_PATHS.has(path)) {
-        // Redirect to profile if already logged in
         if (isLoggedIn) {
-          return Response.redirect(new URL('/profile', nextUrl));
+          return NextResponse.redirect(new URL('/profile', nextUrl.origin));
         }
         return true;
       }
 
-      // More precise private path checking
-      const exactPrivatePaths = ['/profile']; // Be more specific
-      const isExactPrivatePath = exactPrivatePaths.includes(path);
-
       // Handle private paths
-      if (isExactPrivatePath) {
+      if (PRIVATE_PATHS.has(path)) {
         if (!isLoggedIn) {
           const callbackUrl = encodeURIComponent(path);
-          return Response.redirect(
-            new URL(`/authclient/Login?callbackUrl=${callbackUrl}`, nextUrl)
+          return NextResponse.redirect(
+            new URL(`/authclient/Login?callbackUrl=${callbackUrl}`, nextUrl.origin)
           );
         }
         return true;
@@ -112,11 +111,10 @@ export const authConfig: NextAuthConfig = {
       // Handle root path
       if (path === '/') {
         return isLoggedIn
-          ? Response.redirect(new URL('/profile', nextUrl))
-          : Response.redirect(new URL('/authclient/Login', nextUrl));
+          ? NextResponse.redirect(new URL('/profile', nextUrl.origin))
+          : NextResponse.redirect(new URL('/authclient/Login', nextUrl.origin));
       }
-
-      // Allow access to all other paths
+      // Allow access to other paths (fallback case)
       return true;
     },
   },
